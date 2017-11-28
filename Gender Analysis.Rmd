@@ -3,14 +3,14 @@ title: "Gender Analysis"
 output: html_document
 ---
 
-## Install Necessary Libraries
+# Install Necessary Libraries
 
 ????
 ```{r}
 
 ```
 
-## Turn csv file into a data frame
+# Turn csv file into a data frame
 
 ??????
 can't get file path to work -_____-
@@ -23,14 +23,13 @@ gender.resignation <- read.csv('/info470project/data/Gender Distribution - Resig
 
 ```
 
-## Do analysis
+# Do analysis
 ```{r}
 
 ```
 
-## Make some plots
+# Make some plots/models
 ```{r pressure, echo=FALSE}
 #plot()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
