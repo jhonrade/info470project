@@ -1,0 +1,36 @@
+---
+title: "Gender Analysis"
+output: html_document
+---
+
+## Install Necessary Libraries
+
+????
+```{r}
+
+```
+
+## Turn csv file into a data frame
+
+??????
+can't get file path to work -_____-
+
+```{r}
+
+gender.overall <- read.csv('/info470project/data/Gender Distribution - Overall.csv', row.names=1)
+gender.new.hires<- read.csv('/info470project/data/Gender Distribution - New Hires.csv', row.names=1)
+gender.resignation <- read.csv('/info470project/data/Gender Distribution - Resignations.csv', row.names=1)
+
+```
+
+## Do analysis
+```{r}
+
+```
+
+## Make some plots
+```{r pressure, echo=FALSE}
+#plot()
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
