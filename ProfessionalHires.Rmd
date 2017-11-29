@@ -9,25 +9,28 @@ output: html_document
 
 library(dplyr) 
 library(ggplot2) 
+
 ```
 
 ### Store csv file as a data frame
 
 ```{r}
+
 ph.df <- read.csv('data/professionalhires.csv')
 ph.df
+
 ```
 
 ### Create Calculated Columns (Percentage)
 ```{r}
 
-# Calculate total amount of new hires for every year
+# Calculate total number of new hires for each year
 total.df <- aggregate(. ~ Year, data=ph.df, FUN=sum)
 
-# Add total hires to dataframe
+# Add total hires column to dataframe
 ph.df$TotalHires <- total.df$Count
 
-# Create Calculated Column (percentage)
+# Create Percentage Column (count/total hires)
 ph.df$Percentage <- ph.df$Count / ph.df$TotalHires
 
 ph.df
@@ -36,6 +39,12 @@ ph.df
 
 ### Make some plots/models
 ```{r}
+
+# Plot total count over time for all colleges
+overallPlot <- ggplot(data = total.df) +
+  geom_point(mapping = aes(x = Year, y = Count))
+overallPlot
+
 
 # Plot percentages over time for each College 
 
@@ -52,7 +61,7 @@ facetPlot <- basicPlot + facet_wrap( ~ College, ncol=3)
 facetPlot
 
 
-
+# still gotta figure out a better way to display plots one by one
 
 # Add Linear Models
 
