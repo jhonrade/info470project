@@ -1,0 +1,64 @@
+---
+title: "ProfessionalHires"
+output: html_document
+---
+
+### Install Necessary Libraries
+
+```{r}
+
+library(dplyr) 
+library(ggplot2) 
+```
+
+### Store csv file as a data frame
+
+```{r}
+ph.df <- read.csv('data/professionalhires.csv')
+ph.df
+```
+
+### Create Calculated Columns (Percentage)
+```{r}
+
+# Calculate total amount of new hires for every year
+total.df <- aggregate(. ~ Year, data=ph.df, FUN=sum)
+
+# Add total hires to dataframe
+ph.df$TotalHires <- total.df$Count
+
+# Create Calculated Column (percentage)
+ph.df$Percentage <- ph.df$Count / ph.df$TotalHires
+
+ph.df
+
+```
+
+### Make some plots/models
+```{r}
+
+# Plot percentages over time for each College 
+
+basicPlot <- ggplot(data = ph.df) +
+  geom_point(mapping = aes(x = Year, y = Percentage))
+
+# Colleges separate by color
+colorPlot <- ggplot(data = ph.df) +
+  geom_point(mapping = aes(x = Year, y = Percentage, color = College))
+colorPlot
+
+# Colleges separate by facets
+facetPlot <- basicPlot + facet_wrap( ~ College, ncol=3)
+facetPlot
+
+
+
+
+# Add Linear Models
+
+
+
+
+
+```
+
