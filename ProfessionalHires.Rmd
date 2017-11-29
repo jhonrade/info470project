@@ -6,24 +6,19 @@ output: html_document
 ### Install Necessary Libraries
 
 ```{r}
-
 library(dplyr) 
 library(ggplot2) 
-
 ```
 
 ### Store csv file as a data frame
 
 ```{r}
-
 profhires.df <- read.csv('data/professionalhires.csv')
 profhires.df
-
 ```
 
 ### Create Calculated Columns (Percentage)
 ```{r}
-
 # Calculate total number of new hires for each year
 total.df <- aggregate(. ~ Year, data=profhires.df, FUN=sum)
 
@@ -34,12 +29,10 @@ profhires.df$TotalHires <- total.df$Count
 profhires.df$Percentage <- profhires.df$Count / profhires.df$TotalHires
 
 profhires.df
-
 ```
 
 ### Plot data
 ```{r}
-
 ## Plot total count over time for all colleges
 
 # scatterplot
@@ -74,7 +67,7 @@ stackedBar
 
 
 
-# idk whats the best way to display data form above opens ^^^^^^^
+# idk what's the best way to display the data from the above options ^^^^^^^
 
 ```
 
