@@ -1,0 +1,39 @@
+---
+title: "Resignations"
+output: html_document
+---
+### Install Necessary Libraries
+
+```{r}
+
+library(dplyr) 
+library(ggplot2) 
+
+```
+
+### Store csv files as data frames
+
+```{r}
+
+ethnic.resignations <- read.csv('data/EthnicDistributionResignations.csv')
+gender.resignations <- read.csv('data/GenderDistributionResignations.csv')
+
+```
+
+### Create Calculated Columns (Percentage)
+```{r}
+
+
+
+```
+
+### Plot data
+```{r}
+
+```
+
+
+### Model Data
+```{r}
+
+```

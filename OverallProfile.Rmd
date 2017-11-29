@@ -1,0 +1,40 @@
+---
+title: "OverallProfile"
+output: html_document
+---
+
+### Install Necessary Libraries
+
+```{r}
+
+library(dplyr) 
+library(ggplot2) 
+
+```
+
+### Store csv files as data frames
+
+```{r}
+
+ethnic.overall <- read.csv('data/EthnicDistributionOverall.csv')
+gender.overall <- read.csv('data/GenderDistributionOverall.csv')
+
+```
+
+### Create Calculated Columns (Percentage)
+```{r}
+
+
+
+```
+
+### Plot data
+```{r}
+
+```
+
+
+### Model Data
+```{r}
+
+```

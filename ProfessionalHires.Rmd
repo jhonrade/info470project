@@ -37,37 +37,51 @@ ph.df
 
 ```
 
-### Make some plots/models
+### Plot data
 ```{r}
 
-# Plot total count over time for all colleges
+## Plot total count over time for all colleges
+
+# scatterplot
 overallPlot <- ggplot(data = total.df) +
   geom_point(mapping = aes(x = Year, y = Count))
 overallPlot
 
+# bar graph
+overallBar <- ggplot(data = ph.df, aes(x = Year, y = Count)) +
+    geom_bar(stat="identity")
+overallBar
 
-# Plot percentages over time for each College 
+
+## Plot percentages over time for each College 
 
 basicPlot <- ggplot(data = ph.df) +
   geom_point(mapping = aes(x = Year, y = Percentage))
 
-# Colleges separate by color
+# scatter plot - Colleges separate by color
 colorPlot <- ggplot(data = ph.df) +
   geom_point(mapping = aes(x = Year, y = Percentage, color = College))
 colorPlot
 
-# Colleges separate by facets
+# scatter plot - Colleges separate by facets
 facetPlot <- basicPlot + facet_wrap( ~ College, ncol=3)
 facetPlot
 
-
-# still gotta figure out a better way to display plots one by one
-
-# Add Linear Models
-
-
+# bar graph - College sepeated by stacked bars
+stackedBar <- ggplot(data = ph.df, aes(x = Year, y = Count, fill = College )) +
+    geom_bar(stat="identity")
+stackedBar
 
 
+
+# idk whats the best way to display data form above opens ^^^^^^^
 
 ```
 
+
+### Model Data
+```{r}
+
+# Add Linear Models
+
+```
