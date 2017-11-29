@@ -16,8 +16,8 @@ library(ggplot2)
 
 ```{r}
 
-ph.df <- read.csv('data/professionalhires.csv')
-ph.df
+profhires.df <- read.csv('data/professionalhires.csv')
+profhires.df
 
 ```
 
@@ -25,15 +25,15 @@ ph.df
 ```{r}
 
 # Calculate total number of new hires for each year
-total.df <- aggregate(. ~ Year, data=ph.df, FUN=sum)
+total.df <- aggregate(. ~ Year, data=profhires.df, FUN=sum)
 
 # Add total hires column to dataframe
-ph.df$TotalHires <- total.df$Count
+profhires.df$TotalHires <- total.df$Count
 
 # Create Percentage Column (count/total hires)
-ph.df$Percentage <- ph.df$Count / ph.df$TotalHires
+profhires.df$Percentage <- profhires.df$Count / profhires.df$TotalHires
 
-ph.df
+profhires.df
 
 ```
 
@@ -48,18 +48,18 @@ overallPlot <- ggplot(data = total.df) +
 overallPlot
 
 # bar graph
-overallBar <- ggplot(data = ph.df, aes(x = Year, y = Count)) +
+overallBar <- ggplot(data = profhires.df, aes(x = Year, y = Count)) +
     geom_bar(stat="identity")
 overallBar
 
 
 ## Plot percentages over time for each College 
 
-basicPlot <- ggplot(data = ph.df) +
+basicPlot <- ggplot(data = profhires.df) +
   geom_point(mapping = aes(x = Year, y = Percentage))
 
 # scatter plot - Colleges separate by color
-colorPlot <- ggplot(data = ph.df) +
+colorPlot <- ggplot(data = profhires.df) +
   geom_point(mapping = aes(x = Year, y = Percentage, color = College))
 colorPlot
 
@@ -68,7 +68,7 @@ facetPlot <- basicPlot + facet_wrap( ~ College, ncol=3)
 facetPlot
 
 # bar graph - College sepeated by stacked bars
-stackedBar <- ggplot(data = ph.df, aes(x = Year, y = Count, fill = College )) +
+stackedBar <- ggplot(data = profhires.df, aes(x = Year, y = Count, fill = College )) +
     geom_bar(stat="identity")
 stackedBar
 
