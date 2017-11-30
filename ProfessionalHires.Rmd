@@ -8,9 +8,7 @@ output: html_document
 ```{r}
 library(dplyr) 
 library(ggplot2) 
-#
-library(tidyverse)
-library(modelr)
+
 ```
 
 ### Store csv file as a data frame
@@ -102,13 +100,6 @@ stackedBarC
 
 
 
-
-
-
-
-
-
-
 ## Plot percentages over time for each College 
 
 basicPlot <- ggplot(data = profhires.df, aes(x = Year, y = Percentage)) +
@@ -169,6 +160,5 @@ campusPlott <- ggplot(data = AllCampus, aes(x = Year, y = Percentage, color = Co
     geom_point() +
       geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlott
-
 
 ```
