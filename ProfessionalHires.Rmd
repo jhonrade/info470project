@@ -8,6 +8,9 @@ output: html_document
 ```{r}
 library(dplyr) 
 library(ggplot2) 
+install.packages("tidyverse")
+library(tidyverse)
+library(modelr)
 ```
 
 ### Store csv file as a data frame
@@ -37,12 +40,12 @@ profhires.df
 
 # scatterplot
 overallPlot <- ggplot(data = total.df) +
-  geom_point(mapping = aes(x = Year, y = Count))
+  geom_point(mapping = aes(x = Year, y = Count)) 
 overallPlot
 
 # bar graph
 overallBar <- ggplot(data = profhires.df, aes(x = Year, y = Count)) +
-    geom_bar(stat="identity")
+    geom_bar(stat="identity") 
 overallBar
 
 
@@ -53,7 +56,7 @@ basicPlot <- ggplot(data = profhires.df) +
 
 # scatter plot - Colleges separate by color
 colorPlot <- ggplot(data = profhires.df) +
-  geom_point(mapping = aes(x = Year, y = Percentage, color = College))
+  geom_point(mapping = aes(x = Year, y = Percentage, color = College)) 
 colorPlot
 
 # scatter plot - Colleges separate by facets
@@ -76,5 +79,19 @@ stackedBar
 ```{r}
 
 # Add Linear Models
+
+
+ggplot(data = profhires.df, aes(x = Year, y = Percentage)) +
+  geom_point() +
+  stat_smooth(method=lm)
+
+
+linearModel <- lm(Percentage ~ Year * College, data = profhires.df,) 
+
+grid <- profhires.df %>% 
+  data_grid(Year, Percentage) %>% 
+  gather_predictions(linearModel)
+grid
+
 
 ```

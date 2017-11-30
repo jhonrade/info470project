@@ -24,12 +24,54 @@ gender.overall <- read.csv('data/GenderDistributionOverall.csv')
 ### Create Calculated Columns (Percentage)
 ```{r}
 
+##GENDER
 
+# Calculate total number of new hires for each year
+total.df <- aggregate(. ~ Year, data=gender.overall , FUN=sum)
+
+# Order total tables by Yead (desc) - to match main data frame
+total.df2 <- arrange(total.df, desc(Year))
+
+# split into gender table (just so it aligns with total tables)
+female.df = gender.overall[gender.overall$Gender == "F", ]
+male.df = gender.overall[gender.overall$Gender == "M", ]
+
+# Create Percentage Column (count/total)
+female.df$Percentage <- female.df$Total / total.df2$Total
+male.df$Percentage <- male.df$Total / total.df2$Total
+
+# Union two gender tables
+gender.overall <-bind_rows(female.df, male.df)
 
 ```
 
 ### Plot data
 ```{r}
+
+# plot Counts
+TotalBar <- ggplot(data = gender.overall, aes(x = Year, y = Total,)) +
+    geom_bar(stat="identity") 
+
+  # facetted 
+  GenderBar <- TotalBar + facet_wrap( ~ Gender, ncol=1)
+  GenderBar
+  
+  # stacked
+  StackedBar <- ggplot(data = gender.overall, aes(x = Year, y = Total, fill = Gender)) +
+    geom_bar(stat="identity") 
+
+# plot percentages
+TotalBar2 <- ggplot(data = gender.overall, aes(x = Year, y = Percentage,)) +
+    geom_bar(stat="identity") 
+
+  # facetted 
+  GenderBar2 <- TotalBar2 + facet_wrap( ~ Gender, ncol=1)
+  GenderBar
+  
+  # stacked
+  StackedBar2 <- ggplot(data = gender.overall, aes(x = Year, y = Percentage, fill = Gender)) +
+    geom_bar(stat="identity") 
+  StackedBar2
 
 ```
 
