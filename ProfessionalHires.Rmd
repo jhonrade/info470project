@@ -1,43 +1,61 @@
 ---
-title: "ProfessionalHires"
+  title: "ProfessionalHires"
 output: html_document
 ---
-
-### Install Necessary Libraries
-
-```{r}
+  
+  ### Install Necessary Libraries
+  
+  ```{r}
 library(dplyr) 
 library(ggplot2) 
-
 ```
 
 ### Store csv file as a data frame
 
 ```{r}
-profhires.df <- read.csv('data/professionalhires.csv')
-profhires.df
+profhires.df <- read.csv('data/ProfessionalHires.csv')
+profhires.df 
 ```
 
-### Create Calculated Columns (Percentage)
+## Prep/Clean Data for analysis
+
+### Create all necessary Calculated Columns 
 ```{r}
+
+profhires.df <- profhires.df %>% 
+  arrange(Year)
+
 # Calculate total number of new hires for each year
-total.df <- aggregate(. ~ Year, data=profhires.df, FUN=sum)
+total.df <- aggregate(. ~ Year, data=profhires.df, FUN=sum) 
 
 # Merge tables
 merged.df <- merge(profhires.df, total.df, by="Year")
 merged.df$Percentage <- merged.df$Count.x / merged.df$Count.y
 
-# Add Total Hires Column
-profhires.df$TotalHiresPerYear <- merged.df$Count.y
-
 # Add Percentage Column
 profhires.df$Percentage <- merged.df$Percentage
 
-profhires.df
+# Add Percentage Change between Counts
+profhires.df  <- profhires.df %>% 
+  arrange(College) %>% 
+  group_by(College)  %>% 
+  mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
 
+# Add Percentage Change between Percentages
+profhires.df  <- profhires.df %>% 
+  arrange(College) %>% 
+  group_by(College)  %>% 
+  mutate(percent.pChange = (Percentage-lag(Percentage)))
 
+# Remove
+profhires.df 
 
-# Split by Campus
+```
+
+### Split by Campus
+```{r}
+#Extract Tacoma and Bothell
+
 UWTacoma <- profhires.df %>% 
   filter(College == "UW Tacoma")
 UWTacoma
@@ -46,47 +64,63 @@ UWBothell <- profhires.df %>%
   filter(College == "UW Bothell")
 UWBothell
 
-UWSeattle <- profhires.df %>% 
-  filter(College != "UW Tacoma", College != "UW Bothell")
-UWSeattle <- aggregate(. ~ Year, data=UWSeattle, FUN=sum)
+# Consolidate UW Seattle data
+UWSeattle <- total.df
 UWSeattle$College <- "UW Seattle"
 UWSeattle$College = as.factor(UWSeattle$College)
-UWSeattle$TotalHiresPerYear <- total.df$Count
-UWSeattle$Percentage = UWSeattle$Count / UWSeattle$TotalHiresPerYear
+UWSeattle$Count <- UWSeattle$Count - UWTacoma$Count - UWBothell$Count
+
+# Add Percentage Column
+UWSeattle$Percentage <- UWSeattle$Count / total.df$Count
+
+# Add Percentage Change between Counts
+UWSeattle <- UWSeattle %>% 
+  arrange(College) %>% 
+  group_by(College)  %>% 
+  mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
+
+# Add Percentage Change between Percentages
+UWSeattle <- UWSeattle %>% 
+  arrange(College) %>% 
+  group_by(College)  %>% 
+  mutate(percent.pChange = (Percentage-lag(Percentage)))
+UWSeattle
 
 AllCampus <- union(UWBothell, UWTacoma)
 AllCampus <- union(AllCampus, UWSeattle)
-
 ```
 
-### Plot data
+
+## Trend Analysis
+
+### Plot Counts
 ```{r}
-## Plot total count over time for all colleges
+# Overall Counts
 
 # scatterplot
 overallPlot <- ggplot(data = total.df, aes(x = Year, y = Count)) +
   geom_point() +
-    geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 overallPlot
 
 # bar graph
 overallBar <- ggplot(data = total.df, aes(x = Year, y = Count)) +
-    geom_bar(stat="identity")
+  geom_bar(stat="identity")
 overallBar
 
-
-
-## Plot counts over time for each College 
+## Plot counts for each College 
 
 basicPlotC <- ggplot(data = profhires.df, aes(x = Year, y = Count)) +
-    geom_point() +
-       geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_point() +
+  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+# geom_line() # lines are vertical
 basicPlotC
 
 # scatter plot - Colleges separate by color
 colorPlotC <- ggplot(data = profhires.df, aes(x = Year, y = Count, color = College)) +
-    geom_point() +
-      geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+#geom_smooth(method = "lm") # NOT SHOWING UP EITHER
 colorPlotC
 
 # scatter plot - Colleges separate by facets
@@ -95,70 +129,158 @@ facetPlotC
 
 # bar graph - College sepeated by stacked bars
 stackedBarC <- ggplot(data = profhires.df, aes(x = Year, y = Count, fill = College )) +
-    geom_bar(stat="identity")
+  geom_bar(stat="identity")
 stackedBarC
 
-
-
-## Plot percentages over time for each College 
-
-basicPlot <- ggplot(data = profhires.df, aes(x = Year, y = Percentage)) +
-    geom_point() +
-       geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
-basicPlot
-
-# scatter plot - Colleges separate by color
-colorPlot <- ggplot(data = profhires.df, aes(x = Year, y = Percentage, color = College)) +
-    geom_point() +
-      geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
-colorPlot
-
-# scatter plot - Colleges separate by facets
-facetPlot <- basicPlot + facet_wrap( ~ College, ncol=3)
-facetPlot
-
-# bar graph - College sepeated by stacked bars
-stackedBar <- ggplot(data = profhires.df, aes(x = Year, y = Count, fill = College )) +
-    geom_bar(stat="identity")
-stackedBar
-
-
-# idk what's the best way to display the data from the above options ^^^^^^^
+# bar graph- Colleges separate by facets
+facetGraphC <- stackedBarC+ facet_wrap( ~ College, ncol=3)
+facetGraphC
 
 ```
 
 
-### Informatics
+### Plot Percentages
+```{r}
+## Plot percentages for each College 
+
+basicPlotP <- ggplot(data = profhires.df, aes(x = Year, y = Percentage)) +
+  geom_point() +
+  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+basicPlotP
+
+# scatter plot - Colleges separate by color
+colorPlotP <- ggplot(data = profhires.df, aes(x = Year, y = Percentage, color = College)) +
+  geom_point() +
+  geom_smooth(method = "lm")  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+colorPlotP
+
+# scatter plot - Colleges separate by facets
+facetPlotP <- basicPlotP + facet_wrap( ~ College, ncol=3)
+facetPlotP
+
+# bar graph - College sepeated by stacked bars
+stackedBarP <- ggplot(data = profhires.df, aes(x = Year, y = Percentage, fill = College )) +
+  geom_bar(stat="identity")
+stackedBarP
+
+# bar graph- Colleges separate by facets
+facetGraphP <- stackedBarP + facet_wrap( ~ College, ncol=3)
+facetGraphP
+
+# idk what's the best way to display the data from the above options ^^^^^^^
+```
+
+
+### Plot Count Changes
+```{r}
+# Plot percent changes of counts for each college
+
+basicPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = count.pChange)) +
+  geom_point() +
+  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+basicPlotPC
+
+# scatter plot - Colleges separate by color
+colorPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = count.pChange, color = College)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+colorPlotPC
+
+# scatter plot - Colleges separate by facets
+facetPlotPC <- basicPlotPC + facet_wrap( ~ College, ncol=3)
+facetPlotPC
+
+# idk what's the best way to display the data from the above options ^^^^^^^
+```
+
+
+### Plot Percent Changes
+```{r}
+# Plot percent changes of percentage for each college
+
+basicPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = percent.pChange)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+basicPlotPC
+
+# scatter plot - Colleges separate by color
+colorPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = percent.pChange, color = College)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+colorPlotPC
+
+# scatter plot - Colleges separate by facets
+facetPlotPC <- basicPlot + facet_wrap( ~ College, ncol=3)
+facetPlotPC
+
+# idk what's the best way to display the data from the above options ^^^^^^^
+```
+
+
+## Aditional Analysis
+
+### iSchool
 ```{r}
 
 iSchool.df <- profhires.df %>% 
   filter(College == "Information School")
 
-g <- ggplot(data = iSchool.df, aes(x = Year, y = Percentage))
-g + geom_point()  + geom_smooth(method = "lm") 
-            
+iSchool.df <-  iSchool.df  %>% 
+  group_by(College)  %>% 
+  arrange(Year)   %>% 
+  mutate(count.pChange = ((Count - lag(Count)) / lag(Count) * 100))
+iSchool.df 
 
-gg <- ggplot(data = iSchool.df, aes(x = Year, y = Count))
-gg + geom_point()  + geom_smooth(method = "lm") 
-          
+# Plot counts
+campusPlotC <- ggplot(data = iSchool.df, aes(x = Year, y = Count)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotC
+
+# Plot percentage
+campusPlotP <- ggplot(data = iSchool.df, aes(x = Year, y = Percentage)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotP
+
+# Plot count percentage change
+campusPlotCP <- ggplot(data = iSchool.df, aes(x = Year, y = count.pChange)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotCP
+
+# Plot percentage percentage change
+campusPlotPP <- ggplot(data = iSchool.df, aes(x = Year, y = percent.pChange)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotPP
 
 ```
 
-
-### By UW Campus
+### Separated by Campus (Seattle, Tacoma, Bothell)
 ```{r}
 
-# by counts
-campusPlot <- ggplot(data = AllCampus, aes(x = Year, y = Count, color = College)) +
-    geom_point() +
-      geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
-campusPlot
+# Plot counts
+campusPlotC <- ggplot(data = AllCampus, aes(x = Year, y = Count, color = College)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotC
 
+# Plot percentage
+campusPlotP <- ggplot(data = AllCampus, aes(x = Year, y = Percentage, color = College)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotP
 
-#by percentage
-campusPlott <- ggplot(data = AllCampus, aes(x = Year, y = Percentage, color = College)) +
-    geom_point() +
-      geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
-campusPlott
+# Plot count percentage change
+campusPlotCP <- ggplot(data = AllCampus, aes(x = Year, y = count.pChange, color = College)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotCP
 
+# Plot percentage percentage change
+campusPlotPP <- ggplot(data = AllCampus, aes(x = Year, y = percent.pChange, color = College)) +
+  geom_point() +
+  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+campusPlotPP
 ```
