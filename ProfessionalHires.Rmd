@@ -17,79 +17,87 @@ profhires.df <- read.csv('data/ProfessionalHires.csv')
 profhires.df 
 ```
 
-## Prep/Clean Data for analysis
-
-### Create all necessary Calculated Columns 
+## Prep Data for analysis
 ```{r}
 
-profhires.df <- profhires.df %>% 
-  arrange(Year)
+# organize and clean data frame
+  profhires.df <- profhires.df %>% 
+    arrange(Year)
 
-# Calculate total number of new hires for each year
-total.df <- aggregate(. ~ Year, data=profhires.df, FUN=sum) 
+  colnames(profhires.df)[colnames(profhires.df )=="Year"] <- "AcademicYear"
 
-# Merge tables
-merged.df <- merge(profhires.df, total.df, by="Year")
-merged.df$Percentage <- merged.df$Count.x / merged.df$Count.y
+  # Categorize Academic Year by beginnning year (for graphing purposes)
+  profhires.df <- profhires.df %>%
+    mutate(Year = substr(AcademicYear, 0, 4))
+  
+  # Change types to numeric (for graphing purposes)
+  profhires.df$Count <- as.numeric(profhires.df$Count)
+  profhires.df$Year <- as.numeric(profhires.df$Year)
 
-# Add Percentage Column
-profhires.df$Percentage <- merged.df$Percentage
-
-# Add Percentage Change between Counts
-profhires.df  <- profhires.df %>% 
-  arrange(College) %>% 
-  group_by(College)  %>% 
-  mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
-
-# Add Percentage Change between Percentages
-profhires.df  <- profhires.df %>% 
-  arrange(College) %>% 
-  group_by(College)  %>% 
-  mutate(percent.pChange = (Percentage-lag(Percentage)))
-
-# Remove
-profhires.df 
-
-```
-
+#Create necessary calculated columns
+  
+  # Calculate total number of new hires for each year
+  total.df <- aggregate(. ~ Year, data=profhires.df, FUN=sum) 
+  
+  # Merge tables
+  merged.df <- merge(profhires.df, total.df, by="Year")
+  merged.df$Percentage <- merged.df$Count.x / merged.df$Count.y
+  
+  # Add Percentage Column
+  profhires.df$Percentage <- merged.df$Percentage
+  
+  # Add Percentage Change between Counts
+  profhires.df  <- profhires.df %>% 
+    arrange(College) %>% 
+    group_by(College)  %>% 
+    mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
+  
+  # Add Percentage Change between Percentages
+  profhires.df  <- profhires.df %>% 
+    arrange(College) %>% 
+    group_by(College)  %>% 
+    mutate(percent.pChange = (Percentage-lag(Percentage)))
+  
+  # Remove
+  profhires.df 
+  
 ### Split by Campus
-```{r}
-#Extract Tacoma and Bothell
 
-UWTacoma <- profhires.df %>% 
-  filter(College == "UW Tacoma")
-UWTacoma
+  #Extract Tacoma and Bothell
+  UWTacoma <- profhires.df %>% 
+    filter(College == "UW Tacoma")
+  UWTacoma
+  
+  UWBothell <- profhires.df %>% 
+    filter(College == "UW Bothell")
+  UWBothell
+  
+  # Consolidate UW Seattle data
+  UWSeattle <- total.df
+  UWSeattle$College <- "UW Seattle"
+  UWSeattle$College = as.factor(UWSeattle$College)
+  UWSeattle$Count <- UWSeattle$Count - UWTacoma$Count - UWBothell$Count
+  
+    # Add Percentage Column
+    UWSeattle$Percentage <- UWSeattle$Count / total.df$Count
+    
+    # Add Percentage Change between Counts
+    UWSeattle <- UWSeattle %>% 
+      arrange(College) %>% 
+      group_by(College)  %>% 
+      mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
+    
+    # Add Percentage Change between Percentages
+    UWSeattle <- UWSeattle %>% 
+      arrange(College) %>% 
+      group_by(College)  %>% 
+      mutate(percent.pChange = (Percentage-lag(Percentage)))
+    UWSeattle
+  
+  AllCampus <- union(UWBothell, UWTacoma)
+  AllCampus <- union(AllCampus, UWSeattle)
 
-UWBothell <- profhires.df %>% 
-  filter(College == "UW Bothell")
-UWBothell
-
-# Consolidate UW Seattle data
-UWSeattle <- total.df
-UWSeattle$College <- "UW Seattle"
-UWSeattle$College = as.factor(UWSeattle$College)
-UWSeattle$Count <- UWSeattle$Count - UWTacoma$Count - UWBothell$Count
-
-# Add Percentage Column
-UWSeattle$Percentage <- UWSeattle$Count / total.df$Count
-
-# Add Percentage Change between Counts
-UWSeattle <- UWSeattle %>% 
-  arrange(College) %>% 
-  group_by(College)  %>% 
-  mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
-
-# Add Percentage Change between Percentages
-UWSeattle <- UWSeattle %>% 
-  arrange(College) %>% 
-  group_by(College)  %>% 
-  mutate(percent.pChange = (Percentage-lag(Percentage)))
-UWSeattle
-
-AllCampus <- union(UWBothell, UWTacoma)
-AllCampus <- union(AllCampus, UWSeattle)
 ```
-
 
 ## Trend Analysis
 
@@ -100,7 +108,7 @@ AllCampus <- union(AllCampus, UWSeattle)
 # scatterplot
 overallPlot <- ggplot(data = total.df, aes(x = Year, y = Count)) +
   geom_point() +
-  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE) # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 overallPlot
 
 # bar graph
@@ -112,15 +120,15 @@ overallBar
 
 basicPlotC <- ggplot(data = profhires.df, aes(x = Year, y = Count)) +
   geom_point() +
-  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
-# geom_line() # lines are vertical
+  geom_smooth(method = "lm", se = FALSE) # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+# geom_smooth(method = "lm", se = FALSE) # lines are vertical
 basicPlotC
 
 # scatter plot - Colleges separate by color
 colorPlotC <- ggplot(data = profhires.df, aes(x = Year, y = Count, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
-#geom_smooth(method = "lm") # NOT SHOWING UP EITHER
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+#geom_smooth(method = "lm", se = FALSE) # NOT SHOWING UP EITHER
 colorPlotC
 
 # scatter plot - Colleges separate by facets
@@ -145,13 +153,13 @@ facetGraphC
 
 basicPlotP <- ggplot(data = profhires.df, aes(x = Year, y = Percentage)) +
   geom_point() +
-  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE) # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 basicPlotP
 
 # scatter plot - Colleges separate by color
 colorPlotP <- ggplot(data = profhires.df, aes(x = Year, y = Percentage, color = College)) +
   geom_point() +
-  geom_smooth(method = "lm")  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 colorPlotP
 
 # scatter plot - Colleges separate by facets
@@ -177,13 +185,13 @@ facetGraphP
 
 basicPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = count.pChange)) +
   geom_point() +
-  geom_smooth(method = "lm") # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE) # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 basicPlotPC
 
 # scatter plot - Colleges separate by color
 colorPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = count.pChange, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 colorPlotPC
 
 # scatter plot - Colleges separate by facets
@@ -200,13 +208,13 @@ facetPlotPC
 
 basicPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = percent.pChange)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 basicPlotPC
 
 # scatter plot - Colleges separate by color
 colorPlotPC <- ggplot(data = profhires.df, aes(x = Year, y = percent.pChange, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 colorPlotPC
 
 # scatter plot - Colleges separate by facets
@@ -234,25 +242,25 @@ iSchool.df
 # Plot counts
 campusPlotC <- ggplot(data = iSchool.df, aes(x = Year, y = Count)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotC
 
 # Plot percentage
 campusPlotP <- ggplot(data = iSchool.df, aes(x = Year, y = Percentage)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotP
 
 # Plot count percentage change
 campusPlotCP <- ggplot(data = iSchool.df, aes(x = Year, y = count.pChange)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotCP
 
 # Plot percentage percentage change
 campusPlotPP <- ggplot(data = iSchool.df, aes(x = Year, y = percent.pChange)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotPP
 
 ```
@@ -263,24 +271,24 @@ campusPlotPP
 # Plot counts
 campusPlotC <- ggplot(data = AllCampus, aes(x = Year, y = Count, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotC
 
 # Plot percentage
 campusPlotP <- ggplot(data = AllCampus, aes(x = Year, y = Percentage, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotP
 
 # Plot count percentage change
 campusPlotCP <- ggplot(data = AllCampus, aes(x = Year, y = count.pChange, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotCP
 
 # Plot percentage percentage change
 campusPlotPP <- ggplot(data = AllCampus, aes(x = Year, y = percent.pChange, color = College)) +
   geom_point() +
-  geom_line()  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
+  geom_smooth(method = "lm", se = FALSE)  # LINES ARE NOT SHOWING UP ON GRAPH?? :(
 campusPlotPP
 ```
