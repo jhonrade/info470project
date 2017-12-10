@@ -1,0 +1,372 @@
+---
+  title: "ProfessorialHires"
+output: html_document
+---
+  
+### Install Necessary Libraries
+```{r}
+library(dplyr) 
+library(ggplot2) 
+```
+
+### Store csv file as a data frame
+```{r}
+profhire.df <- read.csv('data/ProfessorialHires.csv')
+```
+
+## Prep Data for analysis
+```{r}
+
+# organize and clean data frame
+  profhire.df <- profhire.df %>% 
+    arrange(Year)
+
+  colnames(profhire.df)[colnames(profhire.df)=="Year"] <- "AcademicYear"
+
+  # Categorize Academic Year by beginnning year (for graphing purposes)
+  profhire.df <- profhire.df %>%
+    mutate(Year = substr(AcademicYear, 0, 4))
+  
+  # Change types to numeric (for graphing purposes)
+  profhire.df$Count <- as.numeric(profhire.df$Count)
+  profhire.df$Year <- as.numeric(profhire.df$Year)
+  
+  # Calculate total number of new hires for each year (for all of UW) 
+  total.df <- aggregate(. ~ Year, data=profhire.df, FUN=sum) 
+  
+  SeattleColleges <- subset(profhire.df, College != "UW Tacoma")
+  SeattleColleges <- subset(SeattleColleges , College != "UW Bothell")
+ 
+  # Calculate total number of new hires for each year (for Seattle Campus colleges only)
+  SeattleTotal.df <- aggregate(. ~ Year, data=SeattleColleges, FUN=sum) 
+  
+  # Merge tables
+  merged.df <- merge(SeattleColleges, SeattleTotal.df, by="Year")
+  merged.df$Percentage <- merged.df$Count.x / merged.df$Count.y
+  
+  # Add Percentage Column
+  SeattleColleges$Percentage <- merged.df$Percentage * 100
+  
+  # Add Percentage Change between Counts
+  SeattleColleges  <- SeattleColleges %>% 
+    arrange(College) %>% 
+    group_by(College)  %>% 
+    mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
+  
+  # Add Percentage Change between Percentages
+  SeattleColleges <- SeattleColleges %>% 
+    arrange(College) %>% 
+    group_by(College)  %>% 
+    mutate(percent.pChange = (Percentage-lag(Percentage)))
+  
+  ### Split by Campus
+
+  #Extract Tacoma and Bothell
+  UWTacoma <- profhire.df %>% 
+    filter(College == "UW Tacoma")
+  UWTacoma
+  
+  UWBothell <- profhire.df  %>% 
+    filter(College == "UW Bothell")
+  UWBothell 
+  
+  # Consolidate UW Seattle data
+  UWSeattle <- SeattleTotal.df
+  UWSeattle$College <- "UW Seattle"
+  UWSeattle$College = as.factor(UWSeattle$College)
+  UWSeattle$AcademicYear = as.factor(UWSeattle$AcademicYear)
+  
+  AllCampus <- union(UWTacoma, UWBothell)
+  AllCampus <- union(AllCampus, UWSeattle)
+  
+  AllCampus$College = as.factor(AllCampus$College)
+  
+    # Merge tables
+    AllCampus <- merge(AllCampus, total.df, by="Year")
+    colnames(AllCampus)[colnames(AllCampus)=="Count.x"] <- "Count"
+    colnames(AllCampus)[colnames(AllCampus)=="Count.y"] <- "TotalCount"
+    colnames(AllCampus)[colnames(AllCampus)=="College.x"] <- "Campus"
+    colnames(AllCampus)[colnames(AllCampus)=="Year.x"] <- "Year"
+    
+    # Add Percentage Column
+    AllCampus$Percentage <- (AllCampus$Count / AllCampus$TotalCount) * 100
+    
+    # Add Percentage Change between Counts
+    AllCampus <- AllCampus %>%
+      arrange(Campus) %>%
+      group_by(Campus) %>%
+      mutate(count.pChange = ((Count - lag(Count)) / lag(Count)))
+    
+    # Add Percentage Change between Percentages
+    AllCampus <- AllCampus %>% 
+      arrange(Campus) %>% 
+      group_by(Campus)  %>% 
+      mutate(percent.pChange = (Percentage - lag(Percentage)))
+    
+    
+   AllCampus
+
+```
+
+
+## Trend Analysis
+
+### Plot Counts
+```{r}
+# Overall Counts
+
+# scatterplot
+overallPlot <- ggplot(data = SeattleTotal.df, aes(x = Year, y = Count)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  
+overallPlot
+
+# bar graph
+overallBar <- ggplot(data = SeattleTotal.df, aes(x = Year, y = Count)) +
+  geom_bar(stat="identity")
+overallBar
+
+## Plot counts for each College 
+
+basicPlotC <- ggplot(data = SeattleColleges, aes(x = Year, y = Count)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  
+basicPlotC
+
+# scatter plot - Colleges separate by color
+colorPlotC <- ggplot(data = SeattleColleges, aes(x = Year, y = Count, color = College)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+colorPlotC
+
+# scatter plot - Colleges separate by facets
+facetPlotC <- basicPlotC + facet_wrap( ~ College, ncol=3)
+facetPlotC
+
+# bar graph - College sepeated by stacked bars
+stackedBarC <- ggplot(data = SeattleColleges, aes(x = Year, y = Count, fill = College )) +
+  geom_bar(stat="identity")
+stackedBarC
+
+# bar graph- Colleges separate by facets
+facetGraphC <- stackedBarC+ facet_wrap( ~ College, ncol=3)
+facetGraphC
+
+```
+
+
+### Plot Percentages
+```{r}
+## Plot percentages for each College 
+
+basicPlotP <- ggplot(data = SeattleColleges, aes(x = Year, y = Percentage)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  
+basicPlotP
+
+# scatter plot - Colleges separate by color
+colorPlotP <- ggplot(data = SeattleColleges, aes(x = Year, y = Percentage, color = College)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  + 
+  labs(title = "Percentage for UW Seattle Colleges", x = "Academic Year", y = "Percentage(%)", color = "School/College") +
+  theme_bw()
+colorPlotP
+
+# scatter plot - Colleges separate by facets
+facetPlotP <- basicPlotP + facet_wrap( ~ College, ncol=3)
+facetPlotP
+
+# bar graph - College sepeated by stacked bars
+stackedBarP <- ggplot(data = SeattleColleges, aes(x = Year, y = Percentage, fill = College )) +
+  geom_bar(stat="identity")
+stackedBarP
+
+# bar graph- Colleges separate by facets
+facetGraphP <- stackedBarP + facet_wrap( ~ College, ncol=3)
+facetGraphP
+```
+
+
+### Plot Count Changes
+```{r}
+# Plot percent changes of counts for each college
+
+basicPlotPC <- ggplot(data = SeattleColleges, aes(x = Year, y = count.pChange)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  
+basicPlotPC
+
+# scatter plot - Colleges separate by color
+colorPlotPC <- ggplot(data = SeattleColleges, aes(x = Year, y = count.pChange, color = College)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+colorPlotPC
+
+# scatter plot - Colleges separate by facets
+facetPlotPC <- basicPlotPC + facet_wrap( ~ College, ncol=3)
+facetPlotPC
+
+# idk what's the best way to display the data from the above options ^^^^^^^
+```
+
+
+### Plot Percent Changes **
+```{r}
+# Plot percent changes of percentage for each college
+
+basicPlotPC <- ggplot(data = SeattleColleges, aes(x = Year, y = percent.pChange)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+basicPlotPC
+
+# scatter plot - Colleges separate by color
+colorPlotPC <- ggplot(data = SeattleColleges, aes(x = Year, y = percent.pChange, color = College)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  +
+  labs(title = "Percentage Changes for UW Seattle Colleges", x = "Academic Year", y = "Percentage Diff (%)", color = "School/College") +
+  theme_bw()
+colorPlotPC
+
+# scatter plot - Colleges separate by facets
+facetPlotPC <- basicPlotPC + facet_wrap( ~ College, ncol=2)
+facetPlotPC
+
+# idk what's the best way to display the data from the above options ^^^^^^^
+```
+
+
+## Additional Analysis
+
+### iSchool
+```{r}
+
+iSchool.df <- SeattleColleges %>% 
+  filter(College == "Information School")
+
+iSchool.df <-  iSchool.df  %>% 
+  group_by(College)  %>% 
+  arrange(Year)   %>% 
+  mutate(count.pChange = ((Count - lag(Count)) / lag(Count) * 100))
+iSchool.df 
+
+# Plot counts
+campusPlotC <- ggplot(data = iSchool.df, aes(x = Year, y = Count)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+campusPlotC
+
+# Plot percentage
+campusPlotP <- ggplot(data = iSchool.df, aes(x = Year, y = Percentage)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+campusPlotP
+
+# Plot count percentage change
+campusPlotCP <- ggplot(data = iSchool.df, aes(x = Year, y = count.pChange)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+campusPlotCP
+
+# Plot percentage percentage change
+campusPlotPP <- ggplot(data = iSchool.df, aes(x = Year, y = percent.pChange)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+campusPlotPP
+
+```
+
+### Separated by Campus (Seattle, Tacoma, Bothell)
+```{r}
+
+# Plot counts
+campusPlotC <- ggplot(data = AllCampus, aes(x = Year, y = Count, color = Campus)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) 
+campusPlotC
+
+# Plot percentage
+campusPlotP <- ggplot(data = AllCampus, aes(x = Year, y = Percentage, color = Campus)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)  + 
+  labs(title = "Percentage of UW Campuses", x = "Academic Year", y = "Percentage(%)") + 
+  theme_bw()
+campusPlotP
+
+# Plot count percentage change
+campusPlotCP <- ggplot(data = AllCampus, aes(x = Year, y = count.pChange, color = Campus)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  labs(title = "Percentage Changes for UW Campuses", x = "Academic Year", y = "Percentage Diff (%)") + 
+  theme_bw()
+campusPlotCP
+
+# Plot percentage percentage change
+campusPlotPP <- ggplot(data = AllCampus, aes(x = Year, y = percent.pChange, color = Campus)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE)   
+campusPlotPP
+
+# bar graph - College sepeated by stacked bars
+campusBarC <- ggplot(data = AllCampus, aes(x = Year, y = Count, fill = Campus)) +
+  geom_bar(stat="identity")
+campusBarC
+```
+
+
+### Analyze Trends
+```{r}
+
+# Find slopes and y-intercepts of the UW Seattle Colleges' linear models
+
+# Percentage
+SeattlelmListP <- SeattleColleges %>% 
+    group_by(College) %>% 
+    do({
+      mod = lm(Percentage ~ Year, data = .)
+      data.frame(Intercept = coef(mod)[1],
+                 Slope = coef(mod)[2])
+    })
+# by default y-intercept when x=0, calculate y-intercept when x=2007
+SeattlelmListP$yInterceptAt2007= SeattlelmListP$Intercept + (SeattlelmListP$Slope*2007)
+SeattlelmListP
+
+# Percentage Change
+SeattlelmListPC <- SeattleColleges %>% 
+    group_by(College) %>% 
+    do({
+      mod = lm(percent.pChange ~ Year, data = .)
+      data.frame(Intercept = coef(mod)[1],
+                 Slope = coef(mod)[2])
+    })
+# by default y-intercept when x=0, calculate y-intercept when x=2008
+SeattlelmListPC$yInterceptAt2008= SeattlelmListPC$Intercept + (SeattlelmListPC$Slope*2008)
+SeattlelmListPC 
+
+
+# Find slopes and y-intercepts of the UW Campuses' linear models
+
+# Percentage
+AllCampuslmListP <- AllCampus %>% 
+    group_by(Campus) %>% 
+    do({
+      mod = lm(Percentage ~ Year, data = .)
+      data.frame(Intercept = coef(mod)[1],
+                 Slope = coef(mod)[2])
+    })
+# by default y-intercept when x=0, calculate y-intercept when x=2007
+AllCampuslmListP$yInterceptAt2007 = AllCampuslmListP$Intercept + (AllCampuslmListP$Slope*2007)
+AllCampuslmListP
+
+# Percentage Change
+AllCampuslmListPC <- AllCampus %>% 
+    group_by(Campus) %>% 
+    do({
+      mod = lm(percent.pChange ~ Year, data = .)
+      data.frame(Intercept = coef(mod)[1],
+                 Slope = coef(mod)[2])
+    })
+# by default y-intercept when x=0, make it so x=2008
+AllCampuslmListPC$yInterceptAt2008= AllCampuslmListPC$Intercept + (AllCampuslmListPC$Slope*2008)
+AllCampuslmListPC
+
+```
